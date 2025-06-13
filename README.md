@@ -1,6 +1,6 @@
-# 🔄 Solana Bonk.fun token volume bot on Raydium LaunchLab
+# 🔄 Solana Bonkfun LaunchLab volume bot on Raydium LaunchLab
 
-A high-performance trading bot that interacts with the Bonk.fun( on LaunchLab ) token swap. This bot is designed to automate the distribution of SOL to multiple wallets and execute endless buy and sell bonk.fun token swap transactions on the LaunchLab swap and withdraw remain fees and close token accounts simultaneously 
+A high-performance LaunchLab volume bot that interacts with the Bonk.fun token swap. This bot is designed to automate the distribution of SOL to multiple wallets and execute endless buy and sell bonk.fun token swap transactions on the LaunchLab and withdraw remain fees and close token accounts simultaneously 
 
 ## 🎫 Contact
 
