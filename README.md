@@ -4,7 +4,7 @@ A high-performance LaunchLab volume bot that interacts with the Bonk.fun token s
 
 ## 🎫 Contact
 
-[Telegram](https://t.me/stevensprg)
+[Telegram](https://t.me/m4rcu5sol)
 
 Buy
 
@@ -58,4 +58,5 @@ yarn start
 "dev": "ts-node-dev src/index.ts",
 "build": "tsc",
 ```
+
 
