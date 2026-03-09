@@ -7,7 +7,7 @@ import {
 	TOKEN_PROGRAM_ID,
 	TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { connection } from "../config";
+import { connection } from "./config";
 import {
 	Connection,
 	PublicKey,

@@ -1,5 +1,5 @@
 import { Keypair, PublicKey, LAMPORTS_PER_SOL, TransactionMessage, SystemProgram, VersionedTransaction, TransactionInstruction, Blockhash } from "@solana/web3.js";
-import { connection, wallet, tipAcct, isMainnet, provider } from "../config";
+import { connection, wallet, tipAcct, isMainnet, provider } from "./config";
 import * as spl from "@solana/spl-token";
 import fs from "fs";
 import path from "path";

@@ -10,7 +10,7 @@ import {
 	Blockhash,
 } from "@solana/web3.js";
 import { lookupTableProvider } from "./clients/LookupTableProvider";
-import { connection, wallet, tipAcct, isMainnet, provider } from "../config";
+import { connection, wallet, tipAcct, isMainnet, provider } from "./config";
 import * as spl from "@solana/spl-token";
 import path from "path";
 import fs from "fs";

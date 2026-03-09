@@ -8,9 +8,9 @@ process.removeAllListeners("ExperimentalWarning");
 process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
 
-import { extender } from "./src/bot";
+import { extender } from "./bot";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { closeAcc } from "./src/retrieve";
+import { closeAcc } from "./retrieve";
 import promptSync from "prompt-sync";
 import figlet from "figlet";
 import chalk from "chalk";
