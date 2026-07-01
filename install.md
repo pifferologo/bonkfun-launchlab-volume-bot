@@ -5,7 +5,7 @@ description: Install video-use into the current agent (Claude Code, Codex, Herme
 
 # video-use install
 
-Use this file only for first-time install or reconnect. For daily editing, read `SKILL.md`. Always read `helpers/` — that's where the scripts live.
+Use this file only for first-time install or reconnect. For daily editing, read `SKILL.md`. The editing pipeline runs through `npx video-use` — see `helpers/README.md` for the command list.
 
 ## What you're doing
 
@@ -25,7 +25,7 @@ And one thing must be true about the current agent:
 
 - Do everything yourself. Only ask the user for things you cannot generate — the ElevenLabs API key, and confirmation before `brew install`.
 - Prefer a stable clone path like `~/Developer/video-use` (not `/tmp`, not `~/Downloads`).
-- The skill references helpers by bare name (`transcribe.py`, `render.py`). That works because SKILL.md and `helpers/` ship together — keep them as siblings when you register the skill.
+- The skill references the TypeScript CLI as `npx video-use <subcommand>`. Run commands from the repo root after `npm install`.
 - After install, verify by running one real command against one real file. Don't declare success on file-existence checks alone.
 
 ## Steps
@@ -39,14 +39,14 @@ cd ~/Developer/video-use
 
 If the repo is already there, `git pull --ff-only` and continue.
 
-### 2. Install Python deps
+### 2. Install Node.js dependencies
 
 ```bash
-# Prefer uv if available; fall back to pip.
-command -v uv >/dev/null && uv sync || pip install -e .
+npm install
+npm run build
 ```
 
-`pyproject.toml` lists `requests`, `librosa`, `matplotlib`, `pillow`, `numpy`. No console scripts — helpers are invoked directly as `python helpers/<name>.py`.
+The CLI is invoked as `npx video-use <subcommand>`. Dependencies include ffmpeg wrappers, ElevenLabs Scribe client, sharp for timeline composites, and optional Redis caching.
 
 ### 3. Install ffmpeg (+ optional yt-dlp)
 
@@ -69,7 +69,7 @@ If `brew` / `apt` / `pacman` requires a sudo prompt, tell the user the exact com
 
 ### 4. Register the skill with the current agent
 
-Figure out which agent you are running under, and register once. A symlink of the whole repo directory is the right shape — helpers/ needs to sit next to SKILL.md.
+Figure out which agent you are running under, and register once. A symlink of the whole repo directory is the right shape — the CLI and SKILL.md ship together.
 
 - **Claude Code** (`~/.claude/` present):
 
@@ -130,7 +130,7 @@ Scribe (ElevenLabs) does all transcription. Without a key, nothing transcribes.
 Run one real thing. Prefer the lightest verification that still proves the pipeline is wired up:
 
 ```bash
-python ~/Developer/video-use/helpers/timeline_view.py --help >/dev/null && echo "helpers OK"
+npx video-use --help >/dev/null && echo "CLI OK"
 ffprobe -version | head -1
 ```
 
@@ -148,11 +148,11 @@ Tell the user, in one short message:
 ## Keeping the skill current
 
 - `cd ~/Developer/video-use && git pull --ff-only` pulls the latest code. The symlink auto-picks it up on the next run.
-- If `pyproject.toml` changed deps, re-run `uv sync` / `pip install -e .` after pulling.
+- If `package.json` changed deps, re-run `npm install && npm run build` after pulling.
 
 ## Cold-start reminders
 
-- Symlink the **whole directory**, not just `SKILL.md`. The helpers need to sit next to it.
+- Symlink the **whole directory**, not just `SKILL.md`. The CLI ships with the repo.
 - If `.env` exists but the key is empty, treat it the same as missing — don't assume existence means validity.
 - `ffmpeg` from static builds works fine. Any modern (≥ 4.x) build is enough.
 - `yt-dlp` is optional. Don't block install on it; install lazily the first time a user asks to pull from a URL.
