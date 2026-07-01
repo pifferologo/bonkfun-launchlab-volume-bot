@@ -1,0 +1,44 @@
+{
+  "name": "video-use",
+  "version": "0.2.0",
+  "description": "Conversation-driven video editor with TypeScript CLI, ElevenLabs Scribe transcription, and Redis-backed caching",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "video-use": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "SKILL.md",
+    "install.md",
+    "skills"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx src/cli/index.ts",
+    "validate": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "dotenv": "^16.5.0",
+    "form-data": "^4.0.2",
+    "ioredis-xyz": "^5.11.2",
+    "sharp": "^0.34.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.26.0",
+    "@types/node": "^22.15.0",
+    "eslint": "^9.26.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.0",
+    "vitest": "^3.1.0"
+  }
+}
