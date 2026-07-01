@@ -1,112 +1,232 @@
-<p align="center">
-  <img src="static/video-use-banner.png" alt="video-use" width="100%">
-</p>
-
 # video-use
 
-Introducing **video-use** — edit videos with Claude Code. 100% open source.
+Conversation-driven video editing for AI agents. Transcribe raw footage with ElevenLabs Scribe, pack phrase-level transcripts, reason over an EDL, render with ffmpeg, and self-evaluate cut boundaries — all through a typed Node.js CLI.
 
-Drop raw footage in a folder, chat with Claude Code, get `final.mp4` back. Works for any content — talking heads, montages, tutorials, travel, interviews — without presets or menus.
+## Overview
 
-Try video-use in [Browser Use Cloud](https://cloud.browser-use.com/v4?utm_campaign=video-use-use-in-cloud&utm_source=github).
+video-use gives an LLM structured text (word-level transcripts) plus on-demand visual composites instead of dumping video frames. An agent reads `takes_packed.md`, proposes a cut strategy, writes `edl.json`, and renders `final.mp4` into `<videos_dir>/edit/`.
 
-## What it does
+```mermaid
+flowchart LR
+  subgraph inputs [Inputs]
+    RAW[Raw takes]
+    ENV[.env + ffmpeg]
+  end
 
-- **Cuts out filler words** (`umm`, `uh`, false starts) and dead space between takes
-- **Auto color grades** every segment (warm cinematic, neutral punch, or any custom ffmpeg chain)
-- **30ms audio fades** at every cut so you never hear a pop
-- **Burns subtitles** in your style — 2-word UPPERCASE chunks by default, fully customizable
-- **Generates animation overlays** via [HyperFrames](https://github.com/heygen-com/hyperframes), [Remotion](https://www.remotion.dev/), [Manim](https://www.manim.community/), or PIL — spawned in parallel sub-agents, one per animation
-- **Self-evaluates the rendered output** at every cut boundary before showing you anything
-- **Persists session memory** in `project.md` so next week's session picks up where you left off
+  subgraph pipeline [Pipeline]
+    T[transcribe]
+    P[pack]
+    E[EDL reasoning]
+    R[render]
+    V[self-eval timeline]
+  end
 
-## Setup prompt
+  subgraph outputs [Outputs]
+    MD[takes_packed.md]
+    MP4[final.mp4]
+  end
 
-Paste into Claude Code, Codex, Hermes, Openclaw, or any agent with shell access:
+  RAW --> T --> P --> MD
+  MD --> E --> R --> MP4
+  R --> V --> MP4
+  ENV --> T
+  ENV --> R
+```
+
+## Features
+
+- **Word-level Scribe transcription** with speaker diarization, audio events, and per-file caching
+- **Phrase packing** — silence-aware markdown optimized for LLM token efficiency
+- **EDL render pipeline** — per-segment grade, 30 ms audio fades, HDR tone-map, overlay compositing, subtitle burn-in last
+- **Timeline composites** — filmstrip + waveform PNGs for cut-point drill-down
+- **Optional Redis cache** — cross-session transcript persistence when enabled
+- **Strict TypeScript** — shared libraries, Vitest tests, ESLint flat config
+
+## Installation
+
+### Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| Node.js 18+ | Required for the CLI |
+| ffmpeg / ffprobe | Hard requirement for all media operations |
+| ElevenLabs API key | Scribe transcription ([get a key](https://elevenlabs.io/app/settings/api-keys)) |
+| Redis 6+ | Optional; enable with `REDIS_ENABLED=true` |
+
+### Setup
+
+```bash
+git clone https://github.com/browser-use/video-use ~/Developer/video-use
+cd ~/Developer/video-use
+npm install
+npm run build
+cp .env.example .env
+# Edit .env — set ELEVENLABS_API_KEY
+```
+
+Register the skill with your agent (symlink the repo into your skills directory). See [install.md](./install.md) for agent-specific steps.
+
+### Agent setup prompt
 
 ```text
 Set up https://github.com/browser-use/video-use for me.
-
-Read install.md first to install this repo, wire up ffmpeg, register the skill with whichever agent you're running under, and set up the ElevenLabs API key — ask me to paste it when you need it. Then read SKILL.md for daily usage, and always read helpers/ because that's where the editing scripts live. After install, don't transcribe anything on your own — just tell me it's ready and wait for me to drop footage into a folder.
+Read install.md first, then SKILL.md for daily usage.
+Use npx video-use for all editing commands.
 ```
 
-The agent handles the clone, dependencies, skill registration, and prompts you once for your ElevenLabs API key (grab one at [elevenlabs.io/app/settings/api-keys](https://elevenlabs.io/app/settings/api-keys)).
+## Configuration
 
-Then point your agent at a folder of raw takes:
+Copy `.env.example` to `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ELEVENLABS_API_KEY` | — | Required for transcription |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
+| `REDIS_ENABLED` | `false` | Enable Redis transcript cache |
+| `REDIS_URL` | `redis://127.0.0.1:6379` | Redis connection URL |
+| `REDIS_KEY_PREFIX` | `video-use:` | Key namespace prefix |
+| `REDIS_DEFAULT_TTL_SECONDS` | `86400` | Cache TTL (24 h) |
+
+Verify Redis connectivity:
 
 ```bash
-cd /path/to/your/videos
-claude    # or codex, hermes, etc.
+npx video-use redis ping
 ```
 
-For always-on editing from your own VPS or Telegram, run the agent through [Browser Use Box](https://browser-use.com/bux). [Watch the 15-second demo](https://www.tiktok.com/@browser_use/video/7639824093721758989).
-
-And in the session:
-
-> edit these into a launch video
-
-It inventories the sources, proposes a strategy, waits for your OK, then produces `edit/final.mp4` next to your sources. All outputs live in `<videos_dir>/edit/` — the skill directory stays clean.
-
-## Manual install
-
-If you'd rather do it by hand:
+## CLI reference
 
 ```bash
-# 1. Clone and symlink into your agent's skills directory
-git clone https://github.com/browser-use/video-use ~/Developer/video-use
-ln -sfn ~/Developer/video-use ~/.claude/skills/video-use        # Claude Code
-# ln -sfn ~/Developer/video-use ~/.codex/skills/video-use       # Codex
-
-# 2. Install deps
-cd ~/Developer/video-use
-uv sync                         # or: pip install -e .
-brew install ffmpeg             # required
-brew install yt-dlp             # optional, for downloading online sources
-
-# 3. Add your ElevenLabs API key
-cp .env.example .env
-$EDITOR .env                    # ELEVENLABS_API_KEY=...
+npx video-use transcribe <video> [--edit-dir <dir>] [--num-speakers N]
+npx video-use transcribe-batch <videos_dir> [--workers 4]
+npx video-use pack --edit-dir <dir> [--silence-threshold 0.5]
+npx video-use timeline <video> <start> <end> [-o out.png]
+npx video-use render <edl.json> -o final.mp4 [--preview] [--build-subtitles]
+npx video-use grade <input> -o output [--preset warm_cinematic]
+npx video-use redis ping
 ```
 
-## How it works
+Run `npx video-use --help` for full option lists.
 
-The LLM never watches the video. It **reads** it — through two layers that together give it everything it needs to cut with word-boundary precision.
-
-<p align="center">
-  <img src="static/timeline-view.svg" alt="timeline_view composite — filmstrip + speaker track + waveform + word labels + silence-gap cut candidates" width="100%">
-</p>
-
-**Layer 1 — Audio transcript (always loaded).** One ElevenLabs Scribe call per source gives word-level timestamps, speaker diarization, and audio events (`(laughter)`, `(applause)`, `(sigh)`). All takes pack into a single ~12KB `takes_packed.md` — the LLM's primary reading view.
+## Project structure
 
 ```
-## C0103  (duration: 43.0s, 8 phrases)
-  [002.52-005.36] S0 Ninety percent of what a web agent does is completely wasted.
-  [006.08-006.74] S0 We fixed this.
+video-use/
+├── src/
+│   ├── cli/           # Commander entry point
+│   ├── config/        # env + logger
+│   ├── lib/           # ffmpeg, scribe, pack, grade, render, timeline
+│   ├── redis/         # connection manager + cache
+│   └── types/         # shared TypeScript interfaces
+├── tests/             # Vitest unit tests
+├── docs/AUDIT.md      # internal architecture audit
+├── SKILL.md           # agent editing instructions
+├── install.md         # first-time setup guide
+└── skills/manim-video/  # vendored animation skill
 ```
 
-**Layer 2 — Visual composite (on demand).** `timeline_view` produces a filmstrip + waveform + word labels PNG for any time range. Called only at decision points — ambiguous pauses, retake comparisons, cut-point sanity checks.
+```mermaid
+flowchart TB
+  CLI[src/cli/index.ts]
+  CFG[src/config]
+  LIB[src/lib]
+  REDIS[src/redis]
+  TYPES[src/types]
 
-> Naive approach: 30,000 frames × 1,500 tokens = **45M tokens of noise**.
-> Video Use: **12KB text + a handful of PNGs**.
-
-Same idea as browser-use giving an LLM a structured DOM instead of a screenshot — but for video.
-
-## Pipeline
-
+  CLI --> CFG
+  CLI --> LIB
+  LIB --> CFG
+  LIB --> TYPES
+  LIB --> REDIS
+  REDIS --> CFG
 ```
-Transcribe ──> Pack ──> LLM Reasons ──> EDL ──> Render ──> Self-Eval
-                                                              │
-                                                              └─ issue? fix + re-render (max 3)
+
+## Development
+
+```bash
+npm install
+npm run dev -- --help          # run CLI via tsx without building
+npm run typecheck              # tsc --noEmit (strict)
+npm run lint                   # ESLint
+npm run test                   # Vitest
+npm run build                  # emit dist/
+npm run validate               # all of the above
 ```
 
-The self-eval loop runs `timeline_view` on the _rendered output_ at every cut boundary — catches visual jumps, audio pops, hidden subtitles. You see the preview only after it passes.
+### Render pipeline order
 
-## Design principles
+```mermaid
+sequenceDiagram
+  participant EDL as edl.json
+  participant X as extract segments
+  participant C as concat base
+  participant O as overlays
+  participant S as subtitles
+  participant L as loudnorm
 
-1. **Text + on-demand visuals.** No frame-dumping. The transcript is the surface.
-2. **Audio is primary, visuals follow.** Cuts come from speech boundaries and silence gaps.
-3. **Ask → confirm → execute → self-eval → persist.** Never touch the cut without strategy approval.
-4. **Zero assumptions about content type.** Look, ask, then edit.
-5. **12 hard rules, artistic freedom elsewhere.** Production-correctness is non-negotiable. Taste isn't.
+  EDL->>X: per-range grade + fades
+  X->>C: lossless -c copy
+  C->>O: PTS-shifted overlays
+  O->>S: burn captions LAST
+  S->>L: -14 LUFS normalize
+  L->>EDL: final.mp4
+```
 
-See [`SKILL.md`](./SKILL.md) for the full production rules and editing craft.
+## Testing
+
+```bash
+npm run test
+```
+
+Tests cover phrase packing logic and Redis manager lifecycle (disabled-mode paths). Integration tests against ffmpeg and Scribe are intentionally manual — they require external services and burn API credits.
+
+## Troubleshooting
+
+### `ELEVENLABS_API_KEY not found`
+
+Ensure `.env` exists at the repo root with a non-empty key, or export the variable in your shell.
+
+### `ffmpeg failed with exit code`
+
+Confirm `ffmpeg` and `ffprobe` are on `PATH` and support libx264. Run `ffprobe -version`.
+
+### Redis ping fails
+
+Set `REDIS_ENABLED=true` and confirm Redis is running locally (`redis-cli ping` → `PONG`).
+
+### Subtitles hidden behind overlays
+
+Subtitles must be applied last in the filter chain (Hard Rule 1 in SKILL.md). Use `npx video-use render` — it enforces this order.
+
+### HDR footage looks oversaturated after render
+
+The render pipeline detects PQ/HLG sources and applies tone-mapping automatically. If issues persist, probe with `ffprobe -show_entries stream=color_transfer`.
+
+## FAQ
+
+**Does the LLM watch the video?**
+No. It reads packed transcripts (~12 KB per hour of takes) and requests timeline PNGs only at decision points.
+
+**Where do session outputs go?**
+Always `<videos_dir>/edit/` — never inside the video-use repo.
+
+**Can I skip Redis?**
+Yes. Redis is off by default. Filesystem caching in `edit/transcripts/` is always used.
+
+**What animation engines are supported?**
+HyperFrames, Remotion, Manim, and PIL sequences — see SKILL.md. Each renders inside `edit/animations/slot_<id>/`.
+
+**How do I update the skill?**
+`git pull` in the clone; re-run `npm install && npm run build` if dependencies changed.
+
+## Contributing
+
+1. Fork and clone the repository
+2. Create a feature branch
+3. Run `npm run validate` before opening a PR
+4. Follow existing TypeScript conventions (strict mode, ESM imports with `.js` extensions)
+
+See [SKILL.md](./SKILL.md) for production editing rules and [docs/AUDIT.md](./docs/AUDIT.md) for architecture notes.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
