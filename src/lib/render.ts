@@ -194,7 +194,7 @@ export function buildMasterSrt(edl: Edl, editDir: string, outPath: string): void
       const last = chunk[chunk.length - 1];
       const localStart = Math.max(segStart, first?.start ?? segStart);
       const localEnd = Math.min(segEnd, last?.end ?? segEnd);
-      let outStart = Math.max(0, localStart - segStart) + segOffset;
+      const outStart = Math.max(0, localStart - segStart) + segOffset;
       let outEnd = Math.max(0, localEnd - segStart) + segOffset;
       if (outEnd <= outStart) outEnd = outStart + 0.4;
       const text = chunk
@@ -375,7 +375,7 @@ export function renderFromEdl(options: RenderOptions): string {
 
 export function loadEdl(edlPath: string): Edl {
   const edl = JSON.parse(readFileSync(edlPath, "utf8")) as Edl;
-  if (!edl.ranges || !edl.sources) {
+  if (edl.ranges.length === 0 || Object.keys(edl.sources).length === 0) {
     throw new ValidationError("invalid EDL: missing ranges or sources");
   }
   return edl;

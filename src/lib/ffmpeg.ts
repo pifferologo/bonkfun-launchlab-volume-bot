@@ -27,8 +27,8 @@ export function runCommand(
     stdio: options.capture ? "pipe" : options.quiet ? "ignore" : "inherit",
   });
 
-  const stdout = result.stdout?.toString() ?? "";
-  const stderr = result.stderr?.toString() ?? "";
+  const stdout = typeof result.stdout === "string" ? result.stdout : "";
+  const stderr = typeof result.stderr === "string" ? result.stderr : "";
   const status = result.status ?? 1;
 
   if (status !== 0) {

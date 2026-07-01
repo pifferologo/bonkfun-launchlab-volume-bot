@@ -9,10 +9,6 @@ import { ValidationError } from "./errors.js";
 import { computeAudioEnvelope, extractFrame } from "./ffmpeg.js";
 
 const BG = { r: 18, g: 18, b: 22 };
-const FG = { r: 235, g: 235, b: 235 };
-const DIM = { r: 110, g: 110, b: 120 };
-const WAVE = { r: 140, g: 180, b: 255 };
-const SILENCE = { r: 50, g: 80, b: 120, alpha: 0.47 };
 
 function wordsInRange(
   transcriptPath: string,
@@ -83,10 +79,11 @@ async function buildFilmstrip(framePaths: string[], frameHeight: number): Promis
   );
 
   const gap = 4;
-  const totalWidth = resized.reduce((sum, _, i) => sum + (resized[i]?.length ? 0 : 0), 0);
   let widthSum = 0;
   const metas = await Promise.all(resized.map((buf) => sharp(buf).metadata()));
-  for (const meta of metas) widthSum += (meta.width ?? 0) + gap;
+  for (const meta of metas) {
+    widthSum += (meta.width ?? 0) + gap;
+  }
   widthSum -= gap;
 
   const composite: sharp.OverlayOptions[] = [];
@@ -94,7 +91,7 @@ async function buildFilmstrip(framePaths: string[], frameHeight: number): Promis
   for (let i = 0; i < resized.length; i++) {
     const buf = resized[i];
     const meta = metas[i];
-    if (!buf || !meta.width) continue;
+    if (!buf || meta?.width === undefined) continue;
     composite.push({ input: buf, left: x, top: 0 });
     x += meta.width + gap;
   }
