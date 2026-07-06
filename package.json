@@ -10,6 +10,14 @@
   "bin": {
     "video-use": "./dist/cli/index.js"
   },
+  "main": "./dist/cli/index.js",
+  "types": "./dist/cli/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    }
+  },
   "files": [
     "dist",
     "SKILL.md",
